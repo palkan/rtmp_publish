@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<local:CoreApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+                       preloader="ru.teachbase.preloader.LogoCustomPreloader"
+                       showStatusBar="false"
+                       xmlns:local="*">
+    <fx:Metadata>
+        [SWF(width="1000", height="740")]
+    </fx:Metadata>
+
+    <fx:Script>
+		<![CDATA[
+
+        override protected function createMainApp():MainApplication{
+            return new MainApplication();
+        }
+
+        ]]>
+	</fx:Script>
+</local:CoreApplication>

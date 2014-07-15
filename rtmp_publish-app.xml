@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<!-- Adobe AIR Application Descriptor File Template.
+     Specifies parameters for identifying, installing, and launching AIR applications.
+
+     xmlns - The Adobe AIR namespace: http://ns.adobe.com/air/application/3.1.
+     The last segment of the namespace specifies the version of the AIR runtime required for this application to run.
+
+     minimumPatchLevel - The minimum patch level of the AIR runtime required to run the application. Optional. -->
+
+<application xmlns="http://ns.adobe.com/air/application/3.1">
+
+    <!-- A universally unique application identifier. Must be unique across all AIR applications.
+         Using a reverse DNS-style name as the id is recommended. (Eg. com.example.ExampleApplication.) Required. -->
+    <id>rtmp-publish</id>
+
+    <!-- Used as the filename for the application. Required. -->
+    <filename>rtmp_publish</filename>
+
+    <!-- The name that is displayed in the AIR application installer. May have multiple values for each language. See samples or xsd schema file. Optional. -->
+    <name>AIR RTMP publish</name>
+
+    <!-- A string value of the format <0-999>.<0-999>.<0-999> that represents application version which can be used to check for application upgrade.
+         Values can also be 1-part or 2-part. It is not necessary to have a 3-part value.
+         An updated version of application must have a versionNumber value higher than the previous version. Required for namespace >= 2.5. -->
+    <versionNumber>0.1.0</versionNumber>
+
+    <!-- Description, displayed in the AIR application installer. May have multiple values for each language. See samples or xsd schema file. Optional. -->
+    <description>Simple RTMP stream publisher (just like FMLE but with AS3 codecs and settings)</description>
+
+    <copyright>palkan</copyright>
+
+    <!-- Settings for the application's initial window. Required. -->
+    <initialWindow>
+        <!-- The main SWF or HTML file of the application. Required. -->
+        <content>SWF file name is set automatically at compile time</content>
+
+        <title>AIR RTMP Publish</title>
+
+        <visible>true</visible>
+
+        <maximizable>false</maximizable>
+
+        <width>1000</width>
+
+        <height>740</height>
+        <maxSize>1000 740</maxSize>
+    </initialWindow>
+
+    <supportedProfiles>desktop</supportedProfiles>
+    <!-- The icon the system uses for the application. For at least one resolution, specify the path to a PNG file included in the AIR package. Optional. -->
+    <icon>
+        <image16x16>icons/16.png</image16x16>
+        <image32x32>icons/32.png</image32x32>
+        <image36x36>icons/36.png</image36x36>
+        <image48x48>icons/48.png</image48x48>
+        <image57x57>icons/57.png</image57x57>
+        <image72x72>icons/72.png</image72x72>
+    </icon>
+</application>
