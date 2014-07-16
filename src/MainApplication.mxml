@@ -2,6 +2,7 @@
 <s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
          xmlns:s="library://ns.adobe.com/flex/spark"
          xmlns:ui="ru.teachbase.components.ui.*" xmlns:mx="library://ns.adobe.com/flex/mx"
+         xmlns:teachbase="ru.teachbase.*"
          creationComplete="controller.setView(this);setup();draw();"
          minWidth="1000" minHeight="600">
     <fx:Script>
@@ -16,6 +17,7 @@
         import ru.teachbase.constants.NetStreamStatusCodes;
         import ru.teachbase.controller.ApplicationController;
         import ru.teachbase.model.App;
+        import ru.teachbase.net.stats.RTMPWatch;
         import ru.teachbase.utils.Strings;
         import ru.teachbase.utils.logger.Logger;
         import ru.teachbase.utils.logger.LoggerEvent;
@@ -139,6 +141,8 @@
 
         private function init_incoming(stream_name:String):void {
 
+            if(!loopback_cb.selected) return;
+
             dispose_in_stream();
             _stream = new NetStream(App.rtmp.connection);
 
@@ -174,6 +178,10 @@
             _stream.removeEventListener(IOErrorEvent.IO_ERROR, streamErrorHandler);
             _stream.close();
 
+            const watcher:RTMPWatch = _stream.client.data.watcher;
+            watcher && watcher.unwatch();
+            App.rtmp.stats.unregisterInput(watcher);
+
             _stream = null;
 
             _video_in.attachNetStream(null);
@@ -205,8 +213,17 @@
                         _video_in.width = uic_in.width;
                         _video_in.height = uic_in.width * (.75);
                     },500);
+                    var _watcher:RTMPWatch = new RTMPWatch(e.target as NetStream);
+                    App.rtmp.stats.registerInput(_watcher);
+                    _watcher.watch();
+                    e.target.client.data.watcher = _watcher;
                     break;
                 }
+
+                case "NetStream.Video.DimensionChange":
+                    _video_in.width = uic_in.width;
+                    _video_in.height = uic_in.width * (.75);
+                    break;
                 case NetStreamStatusCodes.PLAY_STOP:
                     dispose_in_stream();
                     break;
@@ -495,8 +512,11 @@
                             <s:click><![CDATA[
                                     import ru.teachbase.model.App;
 
+                                    rtmp_mon.source = App.rtmp.stats;
+
                                     App.publisher.onPublish = init_incoming;
                                     App.publisher.startAll();
+
                                     _video.attachCamera(App.publisher.camera);
                                     _video.width = uic_out.width;
                                     _video.height = uic_out.width * (.75);
@@ -538,8 +558,11 @@
                             <s:click><![CDATA[
                                     import ru.teachbase.model.App;
 
+                                    rtmp_mon.source = App.rtmp.stats;
+
                                     App.publisher.onPublish = init_incoming;
                                     App.publisher.toggleStartCamera()
+
                                     _video.attachCamera(App.publisher.camera);
                                     _video.width = uic_out.width;
                                     _video.height = uic_out.width * (.75);
@@ -582,6 +605,8 @@
                             <s:click><![CDATA[
                                     import ru.teachbase.model.App;
 
+                                    rtmp_mon.source = App.rtmp.stats;
+
                                     App.publisher.onPublish = init_incoming;
                                     App.publisher.toggleStartAudio();
                                 ]]></s:click>
@@ -606,6 +631,9 @@
                                 ]]></s:click>
 
                         </s:Button>
+                        <s:Group height="32">
+                            <s:CheckBox id="loopback_cb" verticalCenter="0" label="loopback enabled" enabled="{!connect_input.enabled  &amp;&amp; !App.params.videoSharing &amp;&amp; !App.params.audioSharing}" color="#ffffff" lineHeight="31"/>
+                        </s:Group>
                     </s:HGroup>
 
 
@@ -614,12 +642,18 @@
             </s:HGroup>
         </s:Group>
 
+        <s:Group left="400" height="120" right="8" bottom="240">
+            <s:Label fontSize="12" text="Net stats" color="#cecece"/>
+            <teachbase:RTMPMonitor width="100%" top="20" height="100" id="rtmp_mon" active="{App.params.videoSharing || App.params.audioSharing}">
+            </teachbase:RTMPMonitor>
+        </s:Group>
+
         <s:Group id="logger_content" width="100%" left="400" height="200" bottom="20">
             <s:Label fontSize="12" text="Log" color="#cecece"/>
             <ui:HidingScroller width="100%" height="100%" verticalScrollPolicy="on" horizontalScrollPolicy="off"
                                id="loggerScroller" top="16">
                 <s:RichEditableText height="100%" width="100%" id="loggerList" backgroundColor="#121e21"
-                                    editable="false" paddingLeft="10" text="Log:"
+                                    editable="false" paddingLeft="10"
                                     paddingRight="20" paddingTop="5" paddingBottom="5" focusSkin="{null}">
                 </s:RichEditableText>
             </ui:HidingScroller>

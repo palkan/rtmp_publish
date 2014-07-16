@@ -390,16 +390,22 @@ public class PublishManager extends Manager {
         switch(e.info.code){
             case NetStreamStatusCodes.PUBLISH_START:{
                 this.onPublish && this.onPublish(e.target.client.data.name);
+                var _watcher:RTMPWatch = new RTMPWatch(_stream);
+                _watcher.addEventListener(Event.CLEAR, streamLooksDeadHandler);
+                _watcher.watch();
+                App.rtmp.stats.registerOutput(_watcher);
                 break;
             }
             case NetStreamStatusCodes.UNPUBLISH_SUCCESS:{
                 videoSharing = audioSharing = false;
+                App.rtmp.stats.unregisterOutput();
                 _stream.close();
                 _streaming  = false;
                 break;
             }
             case NetStreamStatusCodes.FAILED:{
                 warning("Publish failed");
+                App.rtmp.stats.unregisterOutput();
                 _streaming = false;
                 closeAll();
                 break;
