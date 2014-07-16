@@ -12,13 +12,11 @@ import flash.media.VideoStreamSettings;
 import flash.net.NetConnection;
 import flash.net.NetStream;
 
-import ru.teachbase.model.App;
-import ru.teachbase.model.PublishParams;
-
 import ru.teachbase.constants.NetStreamStatusCodes;
 import ru.teachbase.manage.*;
+import ru.teachbase.model.App;
+import ru.teachbase.model.PublishParams;
 import ru.teachbase.net.stats.RTMPWatch;
-import ru.teachbase.utils.CameraUtils;
 import ru.teachbase.utils.MicrophoneUtils;
 import ru.teachbase.utils.shortcuts.debug;
 import ru.teachbase.utils.shortcuts.error;
@@ -226,7 +224,7 @@ public class PublishManager extends Manager {
 
         if (_camera && !force) return;
 
-        _camera = CameraUtils.getCamera();
+        _camera = Camera.getCamera();
 
         debug("Switched to camera: " + (_camera ? _camera.name : "none"));
 

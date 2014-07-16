@@ -201,6 +201,10 @@
                 case NetStreamStatusCodes.PLAY_START:
                 {
                     _video_in.attachNetStream(e.target as NetStream);
+                    setTimeout(function(){
+                        _video_in.width = uic_in.width;
+                        _video_in.height = uic_in.width * (.75);
+                    },500);
                     break;
                 }
                 case NetStreamStatusCodes.PLAY_STOP:
