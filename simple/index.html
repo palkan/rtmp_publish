@@ -2,11 +2,11 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>RTMP Publish</title>
-    <link rel="stylesheet" href="styles/reset.css" media="all"/>
-    <link rel="stylesheet" href="styles/font-awesome.min.css" media="all"/>
+    <title>RTMP Publish &mdash; Simple</title>
+    <link rel="stylesheet" href="../styles/reset.css" media="all"/>
+    <link rel="stylesheet" href="../styles/font-awesome.min.css" media="all"/>
     <link href="//fonts.googleapis.com/css?family=PT+Sans&amp;subset=latin,cyrillic" rel="stylesheet" media="all">
-    <link rel="stylesheet" href="styles/main.css" media="all"/>
+    <link rel="stylesheet" href="../styles/main.css" media="all"/>
 </head>
 <body>
     <header>
@@ -18,18 +18,13 @@
     </header>
     <div class="content">
         <div class="content-inner">
-            <div class="desc">
-                FMLE-like AS3/Flex application.
-                Download <a href="files/rtmp_publish.air">AIR app</a> and install or use from browser.
-                Or try very <a href="/simple">simple version</a>
-            </div>
-            <div class="pi player" data-component="swf_player" data-option-url="files/rtmp_publish_web.swf">
+            <div class="pi player simple" data-component="swf_player" data-option-url="../files/rtmp_publish_simple.swf">
             </div>
         </div>
         <footer>
             &copy; palkan 2014
         </footer>
-        <script src="scripts/main.js"></script>
+        <script src="../scripts/main.js"></script>
         <script>
             pi.log_level = 'debug';
             pi.Nod.root.ready(pi.piecify);

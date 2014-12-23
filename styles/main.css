@@ -4,6 +4,11 @@ html, body{
     font-family: 'PT Sans'
 }
 
+.nolink{
+  text-decoration: none;
+  color: black;
+}
+
 header{
    width: 100%;
    background-color: #f3f3f3;
@@ -67,6 +72,12 @@ header{
     display: block;
     margin: 0 auto;
 }
+
+.player.simple{
+  width: 420px;
+  height: 420px;
+}
+
 
 footer{
     position: relative;
