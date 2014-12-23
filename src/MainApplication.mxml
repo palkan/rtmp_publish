@@ -1,32 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
          xmlns:s="library://ns.adobe.com/flex/spark"
-         xmlns:ui="ru.teachbase.components.ui.*" xmlns:mx="library://ns.adobe.com/flex/mx"
-         xmlns:teachbase="ru.teachbase.*"
-         creationComplete="controller.setView(this);setup();draw();"
-         minWidth="1000" minHeight="600">
+         xmlns:mx="library://ns.adobe.com/flex/mx"
+         creationComplete="controller.setView(this);draw();"
+         minWidth="400" minHeight="400">
     <fx:Script>
 		<![CDATA[
-        import flashx.textLayout.elements.ParagraphElement;
-        import flashx.textLayout.elements.SpanElement;
-        import flashx.textLayout.elements.TextFlow;
-
-        import mx.events.FlexEvent;
         import mx.graphics.BitmapFillMode;
 
-        import ru.teachbase.constants.NetStreamStatusCodes;
         import ru.teachbase.controller.ApplicationController;
         import ru.teachbase.model.App;
-        import ru.teachbase.net.stats.RTMPWatch;
-        import ru.teachbase.utils.Strings;
-        import ru.teachbase.utils.logger.Logger;
-        import ru.teachbase.utils.logger.LoggerEvent;
-        import ru.teachbase.utils.logger.LoggerMode;
         import ru.teachbase.utils.shortcuts.config;
         import ru.teachbase.utils.shortcuts.cookie;
         import ru.teachbase.utils.shortcuts.debug;
         import ru.teachbase.utils.shortcuts.error;
-        import ru.teachbase.utils.shortcuts.warning;
 
         import spark.primitives.BitmapImage;
 
@@ -35,65 +22,13 @@
         [Embed(source='/assets/bg.png')]
         private static const BG:Class;
 
-        private const _logFlow:TextFlow = new TextFlow();
-
-        private const _log_min_size:int = 14;
-        private const _log_max_size:int = 250;
 
         // Main vars
-
         private var _video:Video;
-        private var _video_in:Video;
 
         private var _stream:NetStream;
 
-        private function setup():void {
-
-            Logger.MODE = LoggerMode.EVENT;
-
-            loggerList.textFlow = _logFlow;
-
-            var _inited:Boolean = false;
-
-            function scrollToEnd(event:FlexEvent = null):void {
-
-                loggerList.removeEventListener(FlexEvent.UPDATE_COMPLETE, scrollToEnd);
-                loggerScroller.viewport.verticalScrollPosition = loggerScroller.viewport.contentHeight;
-            }
-
-            Logger.instance.addEventListener(LoggerEvent.LOG, function (e:LoggerEvent):void {
-                const timer:Date = new Date();
-
-                var par:ParagraphElement = new ParagraphElement();
-                par.fontSize = 13;
-                par.color = "0xffffff";
-                par.paragraphEndIndent = 2;
-
-                var span:SpanElement = new SpanElement();
-                span.color = "0xffffff";
-                span.text = '[' + Strings.zero(timer.hours) + ':' + Strings.zero(timer.minutes) + ':' + Strings.zero(timer.seconds) + '.' + Strings.zero(timer.milliseconds) + '] ';
-
-                par.addChild(span);
-
-                var textSpan:SpanElement = new SpanElement();
-                textSpan.text = e.message;
-
-                par.addChild(textSpan);
-
-                loggerList.addEventListener(FlexEvent.UPDATE_COMPLETE, scrollToEnd);
-
-                if (!_inited && _logFlow.numChildren === 1) {
-                    _logFlow.removeChildAt(0);
-                    _inited = true;
-                }
-
-                _logFlow.addChild(par);
-            });
-
-        }
-
         public function draw():void {
-
             var background:BitmapImage = new BitmapImage();
             background.source = new BG();
             background.left = background.right = background.top = background.bottom = 0;
@@ -104,14 +39,14 @@
 
         public function failed(message:String):void {
             error(message);
-            if(_video){
+            if (_video) {
                 _video.attachCamera(null);
                 _video.clear();
             }
         }
 
-        public function enable():void{
-           connect_input.enabled = false;
+        public function enable():void {
+            connect_input.enabled = false;
         }
 
         public function get controller():ApplicationController {
@@ -122,7 +57,7 @@
 
             if (!connect_input.text) return debug('URL not set!');
 
-            if(connect_btn.label != 'connect') return do_disconnect();
+            if (connect_btn.label != 'connect') return do_disconnect();
 
             config('rtmp_url', connect_input.text);
             cookie('rtmp_url', connect_input.text);
@@ -132,534 +67,136 @@
         }
 
 
-        private function do_disconnect():void{
+        private function do_disconnect():void {
             _controller.clear();
             connect_input.enabled = true;
             connect_btn.label = 'connect';
         }
-
-
-        private function init_incoming(stream_name:String):void {
-
-            if(!loopback_cb.selected) return;
-
-            dispose_in_stream();
-            _stream = new NetStream(App.rtmp.connection);
-
-
-            _stream.addEventListener(NetStatusEvent.NET_STATUS, streamPlayOnStatusHandler);
-            _stream.addEventListener(AsyncErrorEvent.ASYNC_ERROR, streamErrorHandler);
-            _stream.addEventListener(IOErrorEvent.IO_ERROR, streamErrorHandler);
-
-            _stream.client = {
-                onMetadata: function (data) {
-                    debug('stream meta:', data);
-                },
-                data: {
-                    name: stream_name
-                }
-            };
-
-            _stream.bufferTime = 0;
-            _stream.bufferTimeMax = 1;
-            _stream.backBufferTime = 0;
-
-            debug("Stream play: " + stream_name);
-            _stream.play(stream_name);
-
-        }
-
-
-        private function dispose_in_stream():void {
-            if (!_stream) return;
-
-            _stream.removeEventListener(NetStatusEvent.NET_STATUS, streamPlayOnStatusHandler);
-            _stream.removeEventListener(AsyncErrorEvent.ASYNC_ERROR, streamErrorHandler);
-            _stream.removeEventListener(IOErrorEvent.IO_ERROR, streamErrorHandler);
-            _stream.close();
-
-            const watcher:RTMPWatch = _stream.client.data.watcher;
-            watcher && watcher.unwatch();
-            App.rtmp.stats.unregisterInput(watcher);
-
-            _stream = null;
-
-            _video_in.attachNetStream(null);
-            _video_in.clear();
-        }
-
-
-        private function streamErrorHandler(e:ErrorEvent):void {
-            warning("Stream error " + e.type + " - " + e.text);
-        }
-
-        private function streamPlayOnStatusHandler(e:NetStatusEvent):void {
-
-            debug("incoming stream status:", e.info.code);
-
-            switch (e.info.code) {
-                case NetStreamStatusCodes.PLAY_FAILED:
-                    warning("Failed to subscribe to stream", e.target.client.data.name);
-                    dispose_in_stream();
-                    break;
-                case NetStreamStatusCodes.NOT_FOUND:
-                    warning("Stream not found", e.target.client.data.name);
-                    dispose_in_stream();
-                    break;
-                case NetStreamStatusCodes.PLAY_START:
-                {
-                    _video_in.attachNetStream(e.target as NetStream);
-                    setTimeout(function(){
-                        _video_in.width = uic_in.width;
-                        _video_in.height = uic_in.width * (.75);
-                    },500);
-                    var _watcher:RTMPWatch = new RTMPWatch(e.target as NetStream);
-                    App.rtmp.stats.registerInput(_watcher);
-                    _watcher.watch();
-                    e.target.client.data.watcher = _watcher;
-                    break;
-                }
-
-                case "NetStream.Video.DimensionChange":
-                    _video_in.width = uic_in.width;
-                    _video_in.height = uic_in.width * (.75);
-                    break;
-                case NetStreamStatusCodes.PLAY_STOP:
-                    dispose_in_stream();
-                    break;
-            }
-        }
         ]]>
 	</fx:Script>
 
-    <s:Group width="100%" height="100%">
-
-        <s:Group id="main" width="100%" top="30" bottom="10">
-            <s:HGroup width="100%" height="100%">
-                <s:VGroup width="400" height="100%" gap="20" paddingLeft="30" paddingTop="30" paddingBottom="30"
-                          paddingRight="30">
-                    <s:VGroup gap="10">
-                        <s:Label fontSize="14" text="Stream settings" color="#ffffff"/>
-
-                        <s:Label fontSize="12" text="RTMP path" color="#cecece"/>
-                        <s:HGroup width="100%" top="30">
-                           <s:TextInput id="connect_input" width="240" enter="do_connect();" height="31">
-                                <s:initialize><![CDATA[
-                                            connect_input.text = config('rtmp_url') || '';
-                                        ]]></s:initialize>
-                                </s:TextInput>
-                                <s:Button
-                                        width="102"
-                                        height="31"
-                                        skinClass="ru.teachbase.skins.spark.ColorButton"
-                                        color="0xffffff"
-                                        id="connect_btn"
-                                        label="connect"
-                                        initialize="connect_btn.setStyle('backgroundColor',0x11b700); connect_btn.setStyle('borderColor',0x10a100);"
-                                        click="do_connect()"/>
-                        </s:HGroup>
-                        <s:Label fontSize="12" text="Stream type" color="#cecece"/>
-                        <ui:RadioButtonList id="stream_type_rb" buttonSkin="spark.skins.spark.RadioButtonSkin"
-                                            color="#ffffff" fontSize="12" enabled="{!App.params.videoSharing &amp;&amp; !App.params.audioSharing &amp;&amp; !connect_input.enabled}">
-                            <ui:layout>
-                                <s:HorizontalLayout/>
-                            </ui:layout>
-                            <ui:initialize><![CDATA[
-                                    import mx.collections.ArrayList;
-
-                                    stream_type_rb.dataProvider = new ArrayList([
-                                        {label: 'live', selected: true},
-                                        {label: 'record'},
-                                        {label: 'append'}
-                                    ]);
-                                ]]></ui:initialize>
-
-                            <ui:change><![CDATA[
-                                    App.params.type = stream_type_rb.selectedItem.label;
-                                ]]></ui:change>
-                        </ui:RadioButtonList>
-                    </s:VGroup>
-
-
-                    <s:VGroup gap="10">
-                        <s:Label fontSize="14" text="Audio settings" color="#ffffff"/>
-                        <s:Label fontSize="12" text="Codec" color="#cecece"/>
-                        <ui:RadioButtonList id="audio_codec_rb" buttonSkin="spark.skins.spark.RadioButtonSkin"
-                                            color="#ffffff" fontSize="12" enabled="{!App.params.audioSharing  &amp;&amp; !connect_input.enabled}">
-                            <ui:layout>
-                                <s:HorizontalLayout/>
-                            </ui:layout>
-                            <ui:initialize><![CDATA[
-                                    import mx.collections.ArrayList;
-
-                                    audio_codec_rb.dataProvider = new ArrayList([
-                                        {label: 'speex', value: SoundCodec.SPEEX, selected: true},
-                                        {label: 'nellymoser', value: SoundCodec.NELLYMOSER}
-                                    ]);
-                                ]]></ui:initialize>
-
-                            <ui:change><![CDATA[
-                                    App.params.audioCodec = audio_codec_rb.selectedItem.value;
-                                ]]></ui:change>
-                        </ui:RadioButtonList>
-
-                        <s:Label fontSize="12" text="Frames per packet" color="#cecece"/>
-                        <s:HGroup>
-                            <s:HSlider lineHeight="4" value="2" minimum="1" maximum="10" stepSize="1" id="fpp_sld"
-                                       width="200"
-                                       enabled="{(App.params.audioCodec == SoundCodec.SPEEX) &amp;&amp; (!App.params.audioSharing)  &amp;&amp; !connect_input.enabled}"
-                                    >
-                                <s:changeEnd><![CDATA[
-                                    App.params.fpp = fpp_sld.value;
-                                    ]]></s:changeEnd>
-                            </s:HSlider>
-                            <s:Label text="{fpp_sld.value}" fontSize="12" color="#cecece"/>
-                        </s:HGroup>
-
-                        <s:Label fontSize="12" text="Rate (kHz)" color="#cecece"/>
-                        <ui:RadioButtonList id="audio_rate_rb" buttonSkin="spark.skins.spark.RadioButtonSkin"
-                                            color="#ffffff" fontSize="12" enabled="{!App.params.audioSharing  &amp;&amp; !connect_input.enabled}">
-                            <ui:layout>
-                                <s:HorizontalLayout/>
-                            </ui:layout>
-                            <ui:initialize><![CDATA[
-                                    import mx.collections.ArrayList;
-
-                                    audio_rate_rb.dataProvider = new ArrayList([
-                                        {label: '44.1', value: 44, selected: true},
-                                        {label: '22.05', value: 22},
-                                        {label: '11.025', value: 11},
-                                        {label: '8', value: 8},
-                                        {label: '5.512', value: 5}
-                                    ]);
-                                ]]></ui:initialize>
-
-                            <ui:change><![CDATA[
-                                    App.params.audioRate = audio_rate_rb.selectedItem.value;
-                                ]]></ui:change>
-                        </ui:RadioButtonList>
-
-                        <s:Label fontSize="12" text="Volume" color="#cecece" enabled="{!connect_input.enabled}"/>
-                        <s:HGroup>
-                            <s:HSlider lineHeight="4" value="80" minimum="0" maximum="100" stepSize="5" id="volume_sld"
-                                       width="200">
-                                <s:changeEnd><![CDATA[
-                                        App.params.gain = volume_sld.value;
-                                        App.publisher.microphone.gain = volume_sld.value;
-                                    ]]></s:changeEnd>
-                            </s:HSlider>
-                            <s:Label text="{volume_sld.value}" fontSize="12" color="#cecece"/>
-                        </s:HGroup>
-
-                        <s:Label fontSize="12" text="Silence level" color="#cecece"/>
-                        <s:HGroup>
-                            <s:HSlider lineHeight="4" value="0" minimum="0" maximum="100" stepSize="5" id="silence_sld"
-                                       width="200" enabled="{!connect_input.enabled}">
-                                <s:changeEnd><![CDATA[
-                                        App.params.silenceLevel = silence_sld.value;
-                                        App.publisher.microphone && App.publisher.microphone.setSilenceLevel(silence_sld.value);
-                                    ]]></s:changeEnd>
-                            </s:HSlider>
-                            <s:Label text="{silence_sld.value}" fontSize="12" color="#cecece"/>
-                        </s:HGroup>
-
-                    </s:VGroup>
-
-                    <s:VGroup gap="10">
-                        <s:Label fontSize="14" text="Video settings" color="#ffffff"/>
-                        <s:Label fontSize="12" text="Codec" color="#cecece"/>
-                        <ui:RadioButtonList id="video_codec_rb" buttonSkin="spark.skins.spark.RadioButtonSkin"
-                                            color="#ffffff" fontSize="12" enabled="{!App.params.videoSharing &amp;&amp; !connect_input.enabled}">
-                            <ui:layout>
-                                <s:HorizontalLayout/>
-                            </ui:layout>
-                            <ui:initialize><![CDATA[
-                                    import mx.collections.ArrayList;
-
-                                    video_codec_rb.dataProvider = new ArrayList([
-                                        {label: 'h264', value: true, selected: true},
-                                        {label: 'vp6', value: false}
-                                    ]);
-                                ]]></ui:initialize>
-
-                            <ui:change><![CDATA[
-                                    App.params.h264 = video_codec_rb.selectedItem.value;
-                                ]]></ui:change>
-                        </ui:RadioButtonList>
-
-                        <s:Label fontSize="12" text="Key frame interval" color="#cecece"/>
-                        <s:HGroup>
-                            <s:HSlider lineHeight="4" value="10" minimum="2" maximum="20" stepSize="1" id="kfi_sld"
-                                       width="200" enabled="{!App.params.videoSharing &amp;&amp; !connect_input.enabled}">
-                                <s:changeEnd><![CDATA[
-                                        App.params.kfi = kfi_sld.value;
-                                    ]]></s:changeEnd>
-                            </s:HSlider>
-                            <s:Label text="{kfi_sld.value}" fontSize="12" color="#cecece"/>
-                        </s:HGroup>
-
-                        <s:Label fontSize="12" text="Width &amp; Height" color="#cecece"/>
-                        <ui:RadioButtonList id="wh_rb" buttonSkin="spark.skins.spark.RadioButtonSkin"
-                                            color="#ffffff" fontSize="12" enabled="{!connect_input.enabled}">
-                            <ui:layout>
-                                <s:HorizontalLayout/>
-                            </ui:layout>
-                            <ui:initialize><![CDATA[
-                                    import mx.collections.ArrayList;
-
-                                    wh_rb.dataProvider = new ArrayList([
-                                        {label: '1024x768'},
-                                        {label: '800x600'},
-                                        {label: '640x480'},
-                                        {label: '360x240', selected: true},
-                                        {label: '160x120'}
-
-                                    ]);
-                                ]]></ui:initialize>
-
-                            <ui:change><![CDATA[
-                                    var params:Array = wh_rb.selectedItem.label.split('x');
-                                    App.params.width = params[0]||0;
-                                    App.params.height = params[1]||0;
-                                    App.publisher.camera && App.publisher.camera.setMode(App.params.width,App.params.height,App.params.fps);
-                                ]]></ui:change>
-                        </ui:RadioButtonList>
-
-                        <s:Label fontSize="12" text="FPS" color="#cecece"/>
-                        <s:HGroup>
-                            <s:HSlider lineHeight="4" value="15" minimum="2" maximum="30" stepSize="1" id="fps_sld"
-                                       width="200"  enabled="{!App.params.videoSharing  &amp;&amp; !connect_input.enabled}">
-                                <s:changeEnd><![CDATA[
-                                        App.params.fps = fpp_sld.value;
-                                    ]]></s:changeEnd>
-                            </s:HSlider>
-                            <s:Label text="{fps_sld.value}" fontSize="12" color="#cecece"/>
-                        </s:HGroup>
-                    </s:VGroup>
-
-                </s:VGroup>
-
-                <s:VGroup width="100%" height="100%" paddingRight="30">
-                    <s:HGroup width="100%" gap="20">
-                        <s:Group width="50%" id="video_cam_cont">
-                            <s:Rect width="100%" height="100%">
-                                <s:fill>
-                                    <s:SolidColor color="#121e21"/>
-                                </s:fill>
-                            </s:Rect>
-                            <s:Label fontSize="12" text="Camera video" color="#cecece" horizontalCenter="0" verticalCenter="0"/>
-                            <mx:UIComponent id="uic_out" horizontalCenter="0" verticalCenter="0">
-                                <mx:creationComplete><![CDATA[
+        <s:Group id="main" width="400" height="400" horizontalCenter="0" verticalCenter="0">
+                <s:Group width="100%" bottom="100" top="0" id="video_cam_cont">
+                    <s:Rect width="100%" height="100%">
+                        <s:fill>
+                            <s:SolidColor color="#121e21"/>
+                        </s:fill>
+                    </s:Rect>
+                    <s:Label fontSize="12" text="Camera video" color="#cecece" horizontalCenter="0" verticalCenter="0"/>
+                    <mx:UIComponent id="uic_out" horizontalCenter="0" verticalCenter="0">
+                        <mx:creationComplete><![CDATA[
                                 _video = new Video();
                                 _video.smoothing = true;
                                 _video.deblocking = 5;
                                 uic_out.addChild(_video);
-                                    ]]></mx:creationComplete>
-                            </mx:UIComponent>
-                            <s:resize><![CDATA[
+                            ]]></mx:creationComplete>
+                    </mx:UIComponent>
+                    <s:resize><![CDATA[
 
-                                uic_out.width = video_cam_cont.width;
-                                uic_out.height = video_cam_cont.width * (.75);
+                            uic_out.width = video_cam_cont.width;
+                            uic_out.height = video_cam_cont.width * (.75);
 
-                                if(_video){
-                                    _video.width = video_cam_cont.width;
-                                    _video.height = video_cam_cont.width * (.75);
-                                }
+                            if(_video){
+                                _video.width = video_cam_cont.width;
+                                _video.height = video_cam_cont.width * (.75);
+                            }
 
-                                ]]></s:resize>
-                        </s:Group>
-                        <s:Group width="50%" id="video_stream_cont">
-                            <s:Rect width="100%" height="100%">
-                                <s:fill>
-                                    <s:SolidColor color="#121e21"/>
-                                </s:fill>
-                            </s:Rect>
-                            <s:Label fontSize="12" text="Loopback stream video" color="#cecece" horizontalCenter="0" verticalCenter="0"/>
-                            <mx:UIComponent id="uic_in" horizontalCenter="0" verticalCenter="0">
-                                <mx:creationComplete><![CDATA[
-                                        _video_in = new Video();
-                                        _video_in.smoothing = true;
-                                        _video_in.deblocking = 5;
-                                        uic_in.addChild(_video_in);
-                                    ]]></mx:creationComplete>
-                            </mx:UIComponent>
-                            <s:resize><![CDATA[
-
-                                    uic_in.width = video_stream_cont.width;
-                                    uic_in.height = video_stream_cont.width * (.75);
-
-                                    if(_video_in){
-                                        _video_in.width = video_stream_cont.width;
-                                        _video_in.height = video_stream_cont.width * (.75);
-                                    }
-
-                                ]]></s:resize>
-                        </s:Group>
+                        ]]></s:resize>
+                </s:Group>
+                <s:VGroup width="100%" bottom="10">
+                    <s:HGroup width="100%" top="30">
+                        <s:TextInput id="connect_input" width="290" enter="do_connect();" height="31">
+                            <s:initialize><![CDATA[
+                                    connect_input.text = config('rtmp_url') || '';
+                                ]]></s:initialize>
+                        </s:TextInput>
+                        <s:Button
+                                width="102"
+                                height="31"
+                                skinClass="ru.teachbase.skins.spark.ColorButton"
+                                color="0xffffff"
+                                id="connect_btn"
+                                label="connect"
+                                initialize="connect_btn.setStyle('backgroundColor',0x11b700); connect_btn.setStyle('borderColor',0x10a100);"
+                                click="do_connect()"/>
                     </s:HGroup>
-                    <s:HGroup width="100%">
+                    <s:HGroup>
+                    <s:Button
+                            width="102"
+                            height="31"
+                            skinClass="ru.teachbase.skins.spark.ColorButton"
+                            color="0xffffff"
+                            id="all_start_btn"
+                            enabled="{!connect_input.enabled}"
+                            label="start"
+                            visible="{!App.params.videoSharing &amp;&amp; !App.params.audioSharing}"
+                            includeInLayout="{!App.params.videoSharing &amp;&amp; !App.params.audioSharing}"
+                            initialize="all_start_btn.setStyle('backgroundColor',0x11b700); all_start_btn.setStyle('borderColor',0x10a100);"
+                            >
+                        <s:click><![CDATA[
+                                import ru.teachbase.model.App;
+
+                                App.publisher.startAll();
+                                _video.attachCamera(App.publisher.camera);
+                                _video.width = uic_out.width;
+                                _video.height = uic_out.width * (.75);
+                            ]]></s:click>
+
+                    </s:Button>
+                    <s:Button
+                            width="102"
+                            height="31"
+                            skinClass="ru.teachbase.skins.spark.ColorButton"
+                            color="0xffffff"
+                            id="all_stop_btn"
+                            enabled="{!connect_input.enabled}"
+                            label="stop"
+                            visible="{App.params.videoSharing || App.params.audioSharing}"
+                            includeInLayout="{App.params.videoSharing || App.params.audioSharing}"
+                            initialize="all_stop_btn.setStyle('backgroundColor',0xf10028); all_stop_btn.setStyle('borderColor',0xd10033);"
+                            >
+                        <s:click><![CDATA[
+                                import ru.teachbase.model.App;
+
+                                App.publisher.closeAll();
+                                _video.attachCamera(null);
+                                _video.clear();
+                            ]]></s:click>
+
+                    </s:Button>
+                    <s:Button
+                            width="62"
+                            height="31"
+                            skinClass="ru.teachbase.skins.spark.ColorButton"
+                            color="0x595959"
+                            id="mic_btn"
+                            enabled="{!connect_input.enabled}"
+                            label="mic"
+                            initialize="mic_btn.setStyle('backgroundColor',0xfcfcfc); mic_btn.setStyle('borderColor',0xededed);"
+                            >
+                        <s:click><![CDATA[
+                                import ru.teachbase.utils.system.showSystemSettings;
+                                showSystemSettings(SecurityPanel.MICROPHONE);
+                            ]]></s:click>
+
+                    </s:Button>
                         <s:Button
-                                width="102"
+                                width="62"
                                 height="31"
                                 skinClass="ru.teachbase.skins.spark.ColorButton"
-                                color="0xffffff"
-                                id="all_start_btn"
+                                color="0x595959"
+                                id="cam_btn"
                                 enabled="{!connect_input.enabled}"
-                                label="start all"
-                                visible="{!App.params.videoSharing &amp;&amp; !App.params.audioSharing}"
-                                includeInLayout="{!App.params.videoSharing &amp;&amp; !App.params.audioSharing}"
-                                initialize="all_start_btn.setStyle('backgroundColor',0x11b700); all_start_btn.setStyle('borderColor',0x10a100);"
+                                label="cam"
+                                initialize="cam_btn.setStyle('backgroundColor',0xfcfcfc); cam_btn.setStyle('borderColor',0xededed);"
                                 >
                             <s:click><![CDATA[
-                                    import ru.teachbase.model.App;
-
-                                    rtmp_mon.source = App.rtmp.stats;
-
-                                    App.publisher.onPublish = init_incoming;
-                                    App.publisher.startAll();
-
-                                    _video.attachCamera(App.publisher.camera);
-                                    _video.width = uic_out.width;
-                                    _video.height = uic_out.width * (.75);
+                                    import ru.teachbase.utils.system.showSystemSettings;
+                                    showSystemSettings(SecurityPanel.CAMERA);
                                 ]]></s:click>
 
                         </s:Button>
-                        <s:Button
-                                width="102"
-                                height="31"
-                                skinClass="ru.teachbase.skins.spark.ColorButton"
-                                color="0xffffff"
-                                id="all_stop_btn"
-                                enabled="{!connect_input.enabled}"
-                                label="stop all"
-                                visible="{App.params.videoSharing || App.params.audioSharing}"
-                                includeInLayout="{App.params.videoSharing || App.params.audioSharing}"
-                                initialize="all_stop_btn.setStyle('backgroundColor',0xf10028); all_stop_btn.setStyle('borderColor',0xd10033);"
-                                >
-                            <s:click><![CDATA[
-                                    import ru.teachbase.model.App;
-                                    App.publisher.closeAll();
-                                    _video.attachCamera(null);
-                                    _video.clear();
-                                ]]></s:click>
-
-                        </s:Button>
-                        <s:Button
-                                width="102"
-                                height="31"
-                                skinClass="ru.teachbase.skins.spark.ColorButton"
-                                color="0xffffff"
-                                id="cam_start_btn"
-                                enabled="{!connect_input.enabled}"
-                                label="start camera"
-                                visible="{!App.params.videoSharing}"
-                                includeInLayout="{!App.params.videoSharing}"
-                                initialize="cam_start_btn.setStyle('backgroundColor',0x11b700); cam_start_btn.setStyle('borderColor',0x10a100);"
-                                >
-                            <s:click><![CDATA[
-                                    import ru.teachbase.model.App;
-
-                                    rtmp_mon.source = App.rtmp.stats;
-
-                                    App.publisher.onPublish = init_incoming;
-                                    App.publisher.toggleStartCamera()
-
-                                    _video.attachCamera(App.publisher.camera);
-                                    _video.width = uic_out.width;
-                                    _video.height = uic_out.width * (.75);
-                                ]]></s:click>
-
-                        </s:Button>
-                        <s:Button
-                                width="102"
-                                height="31"
-                                skinClass="ru.teachbase.skins.spark.ColorButton"
-                                color="0xffffff"
-                                id="cam_stop_btn"
-                                enabled="{!connect_input.enabled}"
-                                label="stop camera"
-                                visible="{App.params.videoSharing}"
-                                includeInLayout="{App.params.videoSharing}"
-                                initialize="cam_stop_btn.setStyle('backgroundColor',0xf10028); cam_stop_btn.setStyle('borderColor',0xd10033);"
-                                >
-                            <s:click><![CDATA[
-                                    import ru.teachbase.model.App;
-
-                                    App.publisher.closeCamera();
-                                    _video.attachCamera(null);
-                                    _video.clear();
-                                ]]></s:click>
-
-                        </s:Button>
-                        <s:Button
-                                width="102"
-                                height="31"
-                                skinClass="ru.teachbase.skins.spark.ColorButton"
-                                color="0xffffff"
-                                id="mic_start_btn"
-                                enabled="{!connect_input.enabled}"
-                                label="start mic"
-                                initialize="mic_start_btn.setStyle('backgroundColor',0x11b700); mic_start_btn.setStyle('borderColor',0x10a100);"
-                                visible="{!App.params.audioSharing}"
-                                includeInLayout="{!App.params.audioSharing}"
-                                >
-                            <s:click><![CDATA[
-                                    import ru.teachbase.model.App;
-
-                                    rtmp_mon.source = App.rtmp.stats;
-
-                                    App.publisher.onPublish = init_incoming;
-                                    App.publisher.toggleStartAudio();
-                                ]]></s:click>
-
-                        </s:Button>
-                        <s:Button
-                                width="102"
-                                height="31"
-                                skinClass="ru.teachbase.skins.spark.ColorButton"
-                                color="0xffffff"
-                                id="mic_stop_btn"
-                                enabled="{!connect_input.enabled}"
-                                label="stop mic"
-                                initialize="mic_stop_btn.setStyle('backgroundColor',0xf10028); mic_stop_btn.setStyle('borderColor',0xd10033);"
-                                visible="{App.params.audioSharing}"
-                                includeInLayout="{App.params.audioSharing}"
-                                >
-                            <s:click><![CDATA[
-                                    import ru.teachbase.model.App;
-
-                                    App.publisher.closeAudio();
-                                ]]></s:click>
-
-                        </s:Button>
-                        <s:Group height="32">
-                            <s:CheckBox id="loopback_cb" verticalCenter="0" label="loopback enabled" enabled="{!connect_input.enabled  &amp;&amp; !App.params.videoSharing &amp;&amp; !App.params.audioSharing}" color="#ffffff" lineHeight="31"/>
-                        </s:Group>
                     </s:HGroup>
-
-
                 </s:VGroup>
-
-            </s:HGroup>
-        </s:Group>
-
-        <s:Group left="400" height="120" right="8" bottom="240">
-            <s:Label fontSize="12" text="Net stats" color="#cecece"/>
-            <teachbase:RTMPMonitor width="100%" top="20" height="100" id="rtmp_mon" active="{App.params.videoSharing || App.params.audioSharing}">
-            </teachbase:RTMPMonitor>
-        </s:Group>
-
-        <s:Group id="logger_content" width="100%" left="400" height="200" bottom="20">
-            <s:Label fontSize="12" text="Log" color="#cecece"/>
-            <ui:HidingScroller width="100%" height="100%" verticalScrollPolicy="on" horizontalScrollPolicy="off"
-                               id="loggerScroller" top="16">
-                <s:RichEditableText height="100%" width="100%" id="loggerList" backgroundColor="#121e21"
-                                    editable="false" paddingLeft="10"
-                                    paddingRight="20" paddingTop="5" paddingBottom="5" focusSkin="{null}">
-                </s:RichEditableText>
-            </ui:HidingScroller>
-        </s:Group>
-
+            </s:Group>
     </s:Group>
-
-
-</s:Group>
