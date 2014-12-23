@@ -3,7 +3,7 @@
                       preloader="ru.teachbase.preloader.LogoCustomPreloader"
                       xmlns:local="*">
     <fx:Metadata>
-        [SWF(width="1000", height="740")]
+        [SWF(width="400", height="400")]
     </fx:Metadata>
 
     <fx:Script>

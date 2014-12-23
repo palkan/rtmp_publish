@@ -44,6 +44,7 @@ public class PublishManager extends Manager {
 
     private var _stream_type:String = '';
 
+    private var _wasPublishing:Boolean = false;
 
     // Very stupid publish handler!!! Don't repeat this shit!
     public var onPublish:Function;
@@ -295,6 +296,7 @@ public class PublishManager extends Manager {
 
                 _stream.client.data = {name: _stream_name};
                 _stream.publish(_stream_name, params.type);
+                _wasPublishing = true;
                 _streaming = true;
             }
 
@@ -397,6 +399,7 @@ public class PublishManager extends Manager {
                 break;
             }
             case NetStreamStatusCodes.UNPUBLISH_SUCCESS:{
+                _wasPublishing = false;
                 videoSharing = audioSharing = false;
                 App.rtmp.stats.unregisterOutput();
                 _stream.close();
@@ -417,6 +420,10 @@ public class PublishManager extends Manager {
 
     //----------- getter/setter --------------//
 
+
+    public function get wasPublishing():Boolean{
+        return _wasPublishing;
+    }
 
     public function get audioSharing():Boolean {
         return params.audioSharing;

@@ -89,8 +89,8 @@ public class ApplicationController extends EventDispatcher {
         addInitializerListeners(managersInitializedHandler, managersErrorHandler, managersProgressHandler);
 
         Initializer.initializeManagers(
-                new RTMPManager(true),    // connecting to rtmp server
-                new PublishManager(true) // (local) mic/cam publishing
+                App.rtmp || (new RTMPManager(true)),    // connecting to rtmp server
+                App.publisher || (new PublishManager(true)) // (local) mic/cam publishing
         );
     }
 
@@ -127,6 +127,7 @@ public class ApplicationController extends EventDispatcher {
 
         debug('Successfully reinitialized');
         App.view.enable();
+        App.publisher && App.publisher.wasPublishing && App.publisher.startAll()
     }
 
 

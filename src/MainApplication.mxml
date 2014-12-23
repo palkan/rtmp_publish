@@ -49,6 +49,11 @@
             connect_input.enabled = false;
         }
 
+
+        public function showCamera(...args):void{
+           _video && _video.attachCamera(App.publisher.camera);
+        }
+
         public function get controller():ApplicationController {
             return _controller;
         }
@@ -71,6 +76,11 @@
             _controller.clear();
             connect_input.enabled = true;
             connect_btn.label = 'connect';
+
+            if (_video) {
+                _video.attachCamera(null);
+                _video.clear();
+            }
         }
         ]]>
 	</fx:Script>
@@ -137,7 +147,9 @@
                                 import ru.teachbase.model.App;
 
                                 App.publisher.startAll();
-                                _video.attachCamera(App.publisher.camera);
+
+                                App.publisher.onPublish = showCamera;
+
                                 _video.width = uic_out.width;
                                 _video.height = uic_out.width * (.75);
                             ]]></s:click>
