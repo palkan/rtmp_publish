@@ -14,13 +14,13 @@ public class PublishParams {
     public var audioRate:int = 16;
     public var encodeQuality:int = 5;
     public var fpp:int = 2;
-    public var gain:int = 80;
+    public var gain:int = 100;
     public var silenceLevel:int = 0;
 
     public var kfi:int = 10;
     public var fps:int = 15;
-    public var width:int = 320;
-    public var height:int = 240;
+    public var width:int = 800;
+    public var height:int = 600;
     public var bandwidth:int = 0;
     public var bitrate:int = 300;
     public var quality:int = 90;
